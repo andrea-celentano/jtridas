@@ -1,0 +1,7 @@
+*.os
+*.o
+.cproject
+.project
+.settings
+.pydevproject
+build

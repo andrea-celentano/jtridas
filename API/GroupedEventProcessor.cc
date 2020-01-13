@@ -12,18 +12,10 @@ void GroupedEventProcessor::Process(const std::shared_ptr<const JEvent>& event) 
 	std::vector <const TriggerDecision*> triggers;
 	event->GetAll(triggers);
 
-	std::vector <const faWaveboardHit*> hits;
-	event->Get(hits);
-
-	std::cout<<"EVENT"<<std::endl;fflush(stdout);
-
-
 	for (auto trigger : triggers){
-		std::cout<<trigger->GetDescription()<<std::endl;
 		if (trigger->GetDecision() == true) 	tridas_event->should_keep = true;
 	}
 
-	std::cout<<"END-EVENT"<<std::endl;fflush(stdout);
 
 	// Sequentially, process each event and report when a group finishes
 	std::lock_guard < std::mutex > lock(m_mutex);

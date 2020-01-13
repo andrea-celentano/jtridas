@@ -33,7 +33,7 @@ void TridasEventSource::GetEvent(std::shared_ptr<JEvent> event) {
 	}
 
 	// Hydrate JEvent with both the TridasEvent and the group pointer.
-	event->Insert(next_event.first);   // TridasEvent
+	event->Insert(next_event.first);    // TridasEvent
 	event->Insert(next_event.second);   // JEventGroup
 
 	// Tell JANA not to assume ownership of these objects!
@@ -45,3 +45,15 @@ void TridasEventSource::GetEvent(std::shared_ptr<JEvent> event) {
 	event->SetRunNumber(next_event.first->run_number);
 }
 
+/*bool TridasEventSource::GetObjects(std::shared_ptr<JEvent>& aEvent, JFactory* aFactory) {
+
+	// This will get called for every type of object requested for the event
+	// to see if the objects are available from the source. In this example,
+	// the source only provides one type of object: MyHit. If this is not the
+	// type being requested, then return "false" immediately.
+	if (aFactory->GetName() != "MyHit")
+		return false;
+
+
+
+}*/

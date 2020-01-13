@@ -36,6 +36,10 @@ public:
     /// JEventGroup. A downstream EventProcessor may report the event as being finished. Once all
     /// events in the eventgroup are finished, the corresponding call to SubmitAndWait will unblock.
     void GetEvent(std::shared_ptr<JEvent> event) override;
+
+
+    // This method disentagles the faWaveboardHit objects
+    //bool GetObjects(std::shared_ptr<JEvent>& aEvent,JFactory* aFactory);
 };
 
 

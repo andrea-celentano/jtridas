@@ -15,6 +15,8 @@
 #include "DAQ/TridasEvent.h"
 #include "addRecoFactoriesGenerators.h"
 
+#include <stdlib.h>
+
 namespace tridas {
 namespace tcpu {
 
@@ -34,6 +36,10 @@ void TrigJANA(PluginArgs const& args) {
 	static int isFirst = 1;
 	static JApplication * app = 0;
 	static TridasEventSource* evt_src = 0;
+
+
+
+
 
 	if (isFirst) {
 		std::cout << "TrigJANA isFirst being called" << std::endl;
@@ -85,16 +91,31 @@ void TrigJANA(PluginArgs const& args) {
 		}
 	}
 
+	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
+	char *fRunFileName=0;
+	fRunFileName=canonicalize_file_name("/tmp/latest");
+
+	int runN=1;
+	if (fRunFileName == NULL){
+		std::cout<<"TrigJANA: canonicalize_file_name failed"<<std::endl;
+		std::cout<<"Using run number 1"<<std::endl;
+	}else{
+		std::string tmpStr(fRunFileName);
+		runN=atoi(tmpStr.substr(tmpStr.find_last_of("/")+1).c_str());
+		free(fRunFileName);
+	}
+
 	/*We now inject the trig_events to the source*/
 	EventCollector& evc = *args.evc;
 
 	std::vector<TridasEvent*> event_batch;
+
 	for (int i = 0; i < evc.used_trig_events(); ++i) {
 		TriggeredEvent& tev = *(evc.trig_event(i));
 		auto event = new TridasEvent;
 		event->event_number = i;
 		event->time_slice = evc.ts_id();
-		event->run_number = 22;
+		event->run_number = runN;
 		event->should_keep = false;
 
 		//Loop on PMT hits

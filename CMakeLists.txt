@@ -30,7 +30,7 @@ else (NOT DEFINED ENV{JANA_HOME})
 endif (NOT DEFINED ENV{JANA_HOME})
 
 set (JANA_SOURCEDIR $ENV{JANA_HOME}/src/lib/)
-set (JANA_LIBDIR $ENV{JANA_HOME}/Linux_CentOS7-x86_64-gcc8.2.0/lib)
+set (JANA_LIBDIR $ENV{JANA_HOME}/lib)
 
 if (NOT DEFINED ENV{RECO_HOME})
 	message (FATAL_ERROR "Variable RECO_HOME not set")

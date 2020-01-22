@@ -48,7 +48,7 @@ set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 
 
 
-find_package(Boost 1.67 REQUIRED COMPONENTS thread system random program_options regex filesystem)
+find_package(Boost 1.66 REQUIRED COMPONENTS thread system random program_options regex filesystem)
 #find_package(ZMQ 4.0.4 REQUIRED)
 
 

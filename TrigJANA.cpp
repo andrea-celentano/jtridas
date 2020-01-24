@@ -15,6 +15,14 @@
 #include "DAQ/TridasEvent.h"
 #include "addRecoFactoriesGenerators.h"
 
+//CAlibration
+#include <JANA/Calibrations/JCalibrationCCDB.h>
+#include <JANA/Calibrations/JCalibrationFile.h>
+#include <JANA/Calibrations/JCalibrationManager.h>
+
+#define HAVE_CCDB 1
+#include <JANA/Calibrations/JCalibrationGeneratorCCDB.h>
+
 #include <stdlib.h>
 
 namespace tridas {
@@ -62,6 +70,15 @@ void TrigJANA(PluginArgs const& args) {
 
 		std::cout << "Creating JApplication " << std::endl;
 		app = new JApplication(params_copy);
+
+		japp = app;// VERY bad?
+
+		std::cout <<" Adding the JCalibrationGeneratorCCDB to the app"<<std::endl;
+		auto calib_manager = std::make_shared<JCalibrationManager>();
+		calib_manager->AddCalibrationGenerator(new JCalibrationGeneratorCCDB);
+		app->ProvideService(calib_manager);
+		std::cout<<"DONE"<<std::endl;
+
 
 		std::cout << "Adding the event source to the Japplication" << std::endl;
 		evt_src = new TridasEventSource("blocking_source", app);

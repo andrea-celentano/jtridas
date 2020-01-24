@@ -28,9 +28,17 @@ if (NOT DEFINED ENV{JANA_HOME})
 else (NOT DEFINED ENV{JANA_HOME})
 	message (STATUS "JANA_HOME set to:  $ENV{JANA_HOME}")
 endif (NOT DEFINED ENV{JANA_HOME})
-
 set (JANA_SOURCEDIR $ENV{JANA_HOME}/src/lib/)
 set (JANA_LIBDIR $ENV{JANA_HOME}/Linux_CentOS7-x86_64-gcc8.2.0/lib)
+
+if (NOT DEFINED ENV{CCDB_HOME})
+	message (FATAL_ERROR "Variable CCDB_HOME not set")
+else (NOT DEFINED ENV{CCDB_HOME})
+	message (STATUS "CCDB_HOME set to:  $ENV{CCDB_HOME}")
+endif (NOT DEFINED ENV{CCDB_HOME})
+set (CCDB_INCLUDE_DIR $ENV{CCDB_HOME}/include/)
+set (CCDB_LIBDIR $ENV{CCDB_HOME}/lib)
+
 
 if (NOT DEFINED ENV{RECO_HOME})
 	message (FATAL_ERROR "Variable RECO_HOME not set")
@@ -71,8 +79,8 @@ set(
   ${TRIDAS_SOURCEDIR}/DAQ/TCPU/inc
   ${JANA_SOURCEDIR}
   ${RECO_SOURCEDIR}/libraries
- # ${ROOT_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIR}
+  ${CCDB_INCLUDE_DIR}
   CACHE INTERNAL ""
 )
    
@@ -84,6 +92,7 @@ ${PACKAGES_INCLUDE_DIRS}
 link_directories(
  ${JANA_LIBDIR}
  ${RECO_LIBDIR}
+ ${CCDB_LIBDIR}
 )
 
 add_library(TrigJANA MODULE
@@ -97,5 +106,6 @@ target_link_libraries(
   ${Boost_LIBRARIES}
   JANA
   streamingReco
+  ccdb
 )
 

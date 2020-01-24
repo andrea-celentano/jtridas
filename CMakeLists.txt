@@ -48,15 +48,15 @@ endif (NOT DEFINED ENV{RECO_HOME})
 set (RECO_SOURCEDIR $ENV{RECO_HOME}/src)
 set (RECO_LIBDIR $ENV{RECO_HOME}/lib)
 
-#list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS}) 
-#find_package(ROOT REQUIRED COMPONENTS Proof) 
+list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS}) 
+find_package(ROOT REQUIRED COMPONENTS Proof) 
 
 set(CXX_STANDARD_REQUIRED "On")
 set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 
 
 
-find_package(Boost 1.66 REQUIRED COMPONENTS thread system random program_options regex filesystem)
+find_package(Boost 1.67 REQUIRED COMPONENTS thread system random program_options regex filesystem)
 #find_package(ZMQ 4.0.4 REQUIRED)
 
 

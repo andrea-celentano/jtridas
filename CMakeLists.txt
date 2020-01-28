@@ -81,6 +81,7 @@ set(
   ${RECO_SOURCEDIR}/libraries
   ${Boost_INCLUDE_DIR}
   ${CCDB_INCLUDE_DIR}
+  ${ROOT_INCLUDE_DIR}
   CACHE INTERNAL ""
 )
    

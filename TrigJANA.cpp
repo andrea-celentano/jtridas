@@ -10,6 +10,7 @@
 #include "API/JEventSource_Tridas.h"
 #include "API/GroupedEventProcessor.h"
 #include "JANA/Services/JParameterManager.h"
+#include "JANA/Services/JGlobalRootLock.h"
 
 //RECONSTRUCTION includes
 #include "DAQ/TridasEvent.h"
@@ -79,7 +80,10 @@ void TrigJANA(PluginArgs const& args) {
 		app->ProvideService(calib_manager);
 		std::cout<<"DONE"<<std::endl;
 
-
+		std::cout <<"Adding the JGlobalRootLock to the app"<<std::endl;
+		app->ProvideService(std::make_shared<JGlobalRootLock>());
+		std::cout<<"DONE"<<std::endl;
+		
 		std::cout << "Adding the event source to the Japplication" << std::endl;
 		evt_src = new TridasEventSource("blocking_source", app);
 		app->Add(evt_src);

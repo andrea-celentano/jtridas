@@ -51,17 +51,20 @@ void TrigJANA(PluginArgs const& args) {
 
 
 	if (isFirst) {
-		std::cout << "TrigJANA isFirst being called" << std::endl;
-		isFirst = 0;
+	  isFirst = 0;
+	  std::cout << "TrigJANA isFirst being called " << std::endl;fflush(stdout);
+								       	
 
-		std::string const config_file_name = args.params->get < std::string > ("CONFIG_FILE");
+	  std::string const config_file_name = args.params->get < std::string > ("CONFIG_FILE");
 		assert(config_file_name.length() > 0 && "CONFIG_FILE must be present"); //TODO: is this the right way?
 
 		//A.C. everything must be in the config_file_name, including the plugins to be loaded!
-		std::cout << "Loading options from " << config_file_name << std::endl;
+		std::cout << "Loading options from " << config_file_name << std::endl;fflush(stdout);
 		JParameterManager params;
 		try {
+		  std::cout<<"Before read config file"<<std::endl;fflush(stdout);
 			params.ReadConfigFile(config_file_name);
+		  std::cout<<"After read config file"<<std::endl;fflush(stdout);
 		} catch (JException& e) {
 			std::cout << "Problem loading config file '" << config_file_name << "'. Exiting." << std::endl << std::endl;
 			exit(-1);
@@ -69,7 +72,7 @@ void TrigJANA(PluginArgs const& args) {
 
 		auto params_copy = new JParameterManager(params); // JApplication owns params_copy, does not own eventSources
 
-		std::cout << "Creating JApplication " << std::endl;
+		std::cout << "Creating JApplication " << std::endl;fflush(stdout);
 		app = new JApplication(params_copy);
 
 		japp = app;// VERY bad?

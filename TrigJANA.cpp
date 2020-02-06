@@ -35,6 +35,67 @@ void JANAthreadFun(JApplication *app) {
 	std::cout << "TrigJANA JANAthreadFun end" << std::endl;
 }
 
+void initialize_jana(const std::string& config_file_name, JApplication* app, TridasEventSource* evt_src) {
+
+	std::cout << "Greetings from David and Nathan!" << std::endl;fflush(stdout);
+	std::cout << "Initializing JANA" << std::endl;fflush(stdout);
+
+	//A.C. everything must be in the config_file_name, including the plugins to be loaded!
+	std::cout << "Loading options from " << config_file_name << std::endl;fflush(stdout);
+	JParameterManager params;
+	try {
+	  std::cout<<"Before read config file"<<std::endl;fflush(stdout);
+		params.ReadConfigFile(config_file_name);
+	  std::cout<<"After read config file"<<std::endl;fflush(stdout);
+	} catch (JException& e) {
+		std::cout << "Problem loading config file '" << config_file_name << "'. Exiting." << std::endl << std::endl;
+		exit(-1);
+	}
+
+	auto params_copy = new JParameterManager(params); // JApplication owns params_copy, does not own eventSources
+
+	std::cout << "Creating JApplication " << std::endl;fflush(stdout);
+	app = new JApplication(params_copy);
+	japp = app;
+
+	std::cout <<" Adding the JCalibrationGeneratorCCDB to the app"<<std::endl;
+	auto calib_manager = std::make_shared<JCalibrationManager>();
+	calib_manager->AddCalibrationGenerator(new JCalibrationGeneratorCCDB);
+	app->ProvideService(calib_manager);
+	std::cout<<"DONE"<<std::endl;
+
+	std::cout <<"Adding the JGlobalRootLock to the app"<<std::endl;
+	app->ProvideService(std::make_shared<JGlobalRootLock>());
+	std::cout<<"DONE"<<std::endl;
+	
+	std::cout << "Adding the event source to the Japplication" << std::endl;
+	evt_src = new TridasEventSource("blocking_source", app);
+	app->Add(evt_src);
+	std::cout << "DONE" << std::endl;
+
+	std::cout << "Adding the factories Generators" << std::endl;
+	addRecoFactoriesGenerators(app);
+	std::cout << " Done " << std::endl;
+
+	std::cout << "Adding the event processor the Japplication" << std::endl;
+	app->Add(new GroupedEventProcessor());
+	std::cout << "DONE" << std::endl;
+
+	//Launch the thread with the JApplication and detach from it.
+	std::cout << "TrigJANA starting the thread" << std::endl;
+
+	//probably not necessary, app->Run(kFALSE) is enough
+	boost::thread janaThread(JANAthreadFun, app);
+	janaThread.detach();
+	std::cout << "DONE and DETACHED" << std::endl;
+
+	//Don't need - > JANA2 submit_and_wait buffers in the JEventSource.
+	//A.C. without this, crashes
+	while (!app->IsInitialized()) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+}
+
 void TrigJANA(PluginArgs const& args) {
 	int const id = args.id;
 	unsigned plug_events = 0;
@@ -42,78 +103,13 @@ void TrigJANA(PluginArgs const& args) {
 	//std::cout << args.params->ordered_begin()->second.get_value<std::string>() << std::endl;
 
 	//need to pass the configuration file
-	static int isFirst = 1;
+	static std::once_flag is_jana_initialized;
 	static JApplication * app = 0;
 	static TridasEventSource* evt_src = 0;
 
-
-
-
-
-	if (isFirst) {
-	  isFirst = 0;
-	  std::cout << "TrigJANA isFirst being called " << std::endl;fflush(stdout);
-								       	
-
-	  std::string const config_file_name = args.params->get < std::string > ("CONFIG_FILE");
-		assert(config_file_name.length() > 0 && "CONFIG_FILE must be present"); //TODO: is this the right way?
-
-		//A.C. everything must be in the config_file_name, including the plugins to be loaded!
-		std::cout << "Loading options from " << config_file_name << std::endl;fflush(stdout);
-		JParameterManager params;
-		try {
-		  std::cout<<"Before read config file"<<std::endl;fflush(stdout);
-			params.ReadConfigFile(config_file_name);
-		  std::cout<<"After read config file"<<std::endl;fflush(stdout);
-		} catch (JException& e) {
-			std::cout << "Problem loading config file '" << config_file_name << "'. Exiting." << std::endl << std::endl;
-			exit(-1);
-		}
-
-		auto params_copy = new JParameterManager(params); // JApplication owns params_copy, does not own eventSources
-
-		std::cout << "Creating JApplication " << std::endl;fflush(stdout);
-		app = new JApplication(params_copy);
-
-		japp = app;// VERY bad?
-
-		std::cout <<" Adding the JCalibrationGeneratorCCDB to the app"<<std::endl;
-		auto calib_manager = std::make_shared<JCalibrationManager>();
-		calib_manager->AddCalibrationGenerator(new JCalibrationGeneratorCCDB);
-		app->ProvideService(calib_manager);
-		std::cout<<"DONE"<<std::endl;
-
-		std::cout <<"Adding the JGlobalRootLock to the app"<<std::endl;
-		app->ProvideService(std::make_shared<JGlobalRootLock>());
-		std::cout<<"DONE"<<std::endl;
-		
-		std::cout << "Adding the event source to the Japplication" << std::endl;
-		evt_src = new TridasEventSource("blocking_source", app);
-		app->Add(evt_src);
-		std::cout << "DONE" << std::endl;
-
-		std::cout << "Adding the factories Generators" << std::endl;
-		addRecoFactoriesGenerators(app);
-		std::cout << " Done " << std::endl;
-
-		std::cout << "Adding the event processor the Japplication" << std::endl;
-		app->Add(new GroupedEventProcessor());
-		std::cout << "DONE" << std::endl;
-
-		//Launch the thread with the JApplication and detach from it.
-		std::cout << "TrigJANA starting the thread" << std::endl;
-
-		//probably not necessary, app->Run(kFALSE) is enough
-		boost::thread janaThread(JANAthreadFun, app);
-		janaThread.detach();
-		std::cout << "DONE and DETACHED" << std::endl;
-
-		//Don't need - > JANA2 submit_and_wait buffers in the JEventSource.
-		//A.C. without this, crashes
-		while (!app->IsInitialized()) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		}
-	}
+	std::string const config_file_name = args.params->get < std::string > ("CONFIG_FILE");
+	assert(config_file_name.length() > 0 && "CONFIG_FILE must be present"); //TODO: is this the right way?
+	std::call_once(is_jana_initialized, &initialize_jana, config_file_name, app, evt_src);
 
 	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
 	char *fRunFileName=0;

@@ -25,6 +25,9 @@
 #include <JANA/Calibrations/JCalibrationGeneratorCCDB.h>
 
 #include <stdlib.h>
+#include <mutex>
+
+std::mutex m_mutex;
 
 namespace tridas {
 namespace tcpu {
@@ -46,9 +49,7 @@ void TrigJANA(PluginArgs const& args) {
 	static JApplication * app = 0;
 	static TridasEventSource* evt_src = 0;
 
-
-
-
+	std::unique_lock<std::mutex> lock(m_mutex);
 
 	if (isFirst) {
 		std::cout << "TrigJANA isFirst being called" << std::endl;
@@ -72,18 +73,18 @@ void TrigJANA(PluginArgs const& args) {
 		std::cout << "Creating JApplication " << std::endl;
 		app = new JApplication(params_copy);
 
-		japp = app;// VERY bad?
+		japp = app; // VERY bad?
 
-		std::cout <<" Adding the JCalibrationGeneratorCCDB to the app"<<std::endl;
+		std::cout << " Adding the JCalibrationGeneratorCCDB to the app" << std::endl;
 		auto calib_manager = std::make_shared<JCalibrationManager>();
 		calib_manager->AddCalibrationGenerator(new JCalibrationGeneratorCCDB);
 		app->ProvideService(calib_manager);
-		std::cout<<"DONE"<<std::endl;
+		std::cout << "DONE" << std::endl;
 
-		std::cout <<"Adding the JGlobalRootLock to the app"<<std::endl;
+		std::cout << "Adding the JGlobalRootLock to the app" << std::endl;
 		app->ProvideService(std::make_shared<JGlobalRootLock>());
-		std::cout<<"DONE"<<std::endl;
-		
+		std::cout << "DONE" << std::endl;
+
 		std::cout << "Adding the event source to the Japplication" << std::endl;
 		evt_src = new TridasEventSource("blocking_source", app);
 		app->Add(evt_src);
@@ -112,17 +113,19 @@ void TrigJANA(PluginArgs const& args) {
 		}
 	}
 
-	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
-	char *fRunFileName=0;
-	fRunFileName=canonicalize_file_name("/tmp/latest");
+	lock.unlock();
 
-	int runN=1;
-	if (fRunFileName == NULL){
-		std::cout<<"TrigJANA: canonicalize_file_name failed"<<std::endl;
-		std::cout<<"Using run number 1"<<std::endl;
-	}else{
+	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
+	char *fRunFileName = 0;
+	fRunFileName = canonicalize_file_name("/tmp/latest");
+
+	int runN = 1;
+	if (fRunFileName == NULL) {
+		std::cout << "TrigJANA: canonicalize_file_name failed" << std::endl;
+		std::cout << "Using run number 1" << std::endl;
+	} else {
 		std::string tmpStr(fRunFileName);
-		runN=atoi(tmpStr.substr(tmpStr.find_last_of("/")+1).c_str());
+		runN = atoi(tmpStr.substr(tmpStr.find_last_of("/") + 1).c_str());
 		free(fRunFileName);
 	}
 
@@ -162,7 +165,7 @@ void TrigJANA(PluginArgs const& args) {
 			//samples - these may extend on more than one frame.
 			auto pos = 0;
 			while (pos != current_hit->length()) {
-				DataFrameHeader const& dfh2 = *dataframeheader_cast(current_hit->getRawDataStart()+pos);
+				DataFrameHeader const& dfh2 = *dataframeheader_cast(current_hit->getRawDataStart() + pos);
 				pos += sizeof(DataFrameHeader);
 				auto const nsamples = dfh2.NDataSamples;
 				auto psamples = static_cast<uint16_t const*>(static_cast<void const*>(current_hit->getRawDataStart() + pos));
@@ -183,8 +186,6 @@ void TrigJANA(PluginArgs const& args) {
 			 One can judge this from the crate/slot/channel combination, but this is setup-dependent.
 			 For the moment, this is not supported. Hence, for the moment I differentiate between waveboard and fa250 by considering that the fa250 has no samples, only time and charge.
 			 */
-
-
 
 			if (hit.data.size() == 0)
 				hit.type = fadcHit_TYPE::FA250VTPMODE7;

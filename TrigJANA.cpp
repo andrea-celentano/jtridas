@@ -25,6 +25,10 @@
 #include <JANA/Calibrations/JCalibrationGeneratorCCDB.h>
 
 #include <stdlib.h>
+#include <chrono>
+#include <atomic>
+
+#define USE_JANA 1
 
 namespace tridas {
 namespace tcpu {
@@ -35,7 +39,7 @@ void JANAthreadFun(JApplication *app) {
 	std::cout << "TrigJANA JANAthreadFun end" << std::endl;
 }
 
-void initialize_jana(const std::string& config_file_name, JApplication* app, TridasEventSource* evt_src) {
+void initialize_jana(const std::string& config_file_name, JApplication* app, TridasEventSource** evt_src) {
 
 	std::cout << "Greetings from David and Nathan!" << std::endl;fflush(stdout);
 	std::cout << "Initializing JANA" << std::endl;fflush(stdout);
@@ -69,8 +73,8 @@ void initialize_jana(const std::string& config_file_name, JApplication* app, Tri
 	std::cout<<"DONE"<<std::endl;
 	
 	std::cout << "Adding the event source to the Japplication" << std::endl;
-	evt_src = new TridasEventSource("blocking_source", app);
-	app->Add(evt_src);
+	*evt_src = new TridasEventSource("blocking_source", app);
+	app->Add(*evt_src);
 	std::cout << "DONE" << std::endl;
 
 	std::cout << "Adding the factories Generators" << std::endl;
@@ -102,6 +106,15 @@ void TrigJANA(PluginArgs const& args) {
 	//std::cout << args.params->ordered_begin()->first << std::endl;
 	//std::cout << args.params->ordered_begin()->second.get_value<std::string>() << std::endl;
 
+	EventCollector& evc = *args.evc;
+
+        static size_t event_count = 0;
+        static auto last_measurement = std::chrono::high_resolution_clock::now();
+	static std::mutex timer_mutex;
+
+#if USE_JANA
+	//--------- Execute this if USE_JANA is !=0 ---------
+
 	//need to pass the configuration file
 	static std::once_flag is_jana_initialized;
 	static JApplication * app = 0;
@@ -109,7 +122,7 @@ void TrigJANA(PluginArgs const& args) {
 
 	std::string const config_file_name = args.params->get < std::string > ("CONFIG_FILE");
 	assert(config_file_name.length() > 0 && "CONFIG_FILE must be present"); //TODO: is this the right way?
-	std::call_once(is_jana_initialized, &initialize_jana, config_file_name, app, evt_src);
+	std::call_once(is_jana_initialized, &initialize_jana, config_file_name, app, &evt_src);
 
 	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
 	char *fRunFileName=0;
@@ -126,8 +139,6 @@ void TrigJANA(PluginArgs const& args) {
 	}
 
 	/*We now inject the trig_events to the source*/
-	EventCollector& evc = *args.evc;
-
 	std::vector<TridasEvent*> event_batch;
 
 	for (int i = 0; i < evc.used_trig_events(); ++i) {
@@ -216,6 +227,32 @@ void TrigJANA(PluginArgs const& args) {
 	}
 
 	event_batch.clear();
+
+#else
+	//--------- Execute this if USE_JANA is 0 ---------
+
+	for (int i = 0; i < evc.used_trig_events(); ++i) {
+		TriggeredEvent& tev = *(evc.trig_event(i));
+		assert(tev.nseeds_[L1TOTAL_ID] && "Triggered event with no seeds");
+		tev.plugin_nseeds_[id]++;
+		tev.plugin_ok_ = true;
+		++plug_events;
+	}
+
+#endif
+
+	timer_mutex.lock();
+	auto latest_time = std::chrono::high_resolution_clock::now();
+	event_count += evc.used_trig_events(); // I assume this is our event count
+	if ((latest_time-last_measurement) >= std::chrono::seconds(1)) {
+		last_measurement = latest_time;
+		std::cout << "TrigJANA: Instantaneous throughput = " << event_count << " Hz" << std::endl;
+		event_count = 0;
+	}
+	timer_mutex.unlock();
+	
+
+
 	evc.set_stats_for_plugin(id, plug_events);
 
 	std::cout << "TrigJANA triggered " << evc.stats_for_plugin(id) << " of " << evc.used_trig_events() << " events in TTS " << evc.ts_id();

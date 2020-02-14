@@ -124,17 +124,19 @@ void TrigJANA(PluginArgs const& args) {
 	assert(config_file_name.length() > 0 && "CONFIG_FILE must be present"); //TODO: is this the right way?
 	std::call_once(is_jana_initialized, &initialize_jana, config_file_name, app, &evt_src);
 
-	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
-	char *fRunFileName=0;
-	fRunFileName=canonicalize_file_name("/tmp/latest");
+	lock.unlock();
 
-	int runN=1;
-	if (fRunFileName == NULL){
-		std::cout<<"TrigJANA: canonicalize_file_name failed"<<std::endl;
-		std::cout<<"Using run number 1"<<std::endl;
-	}else{
+	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
+	char *fRunFileName = 0;
+	fRunFileName = canonicalize_file_name("/tmp/latest");
+
+	int runN = 1;
+	if (fRunFileName == NULL) {
+		std::cout << "TrigJANA: canonicalize_file_name failed" << std::endl;
+		std::cout << "Using run number 1" << std::endl;
+	} else {
 		std::string tmpStr(fRunFileName);
-		runN=atoi(tmpStr.substr(tmpStr.find_last_of("/")+1).c_str());
+		runN = atoi(tmpStr.substr(tmpStr.find_last_of("/") + 1).c_str());
 		free(fRunFileName);
 	}
 
@@ -172,7 +174,7 @@ void TrigJANA(PluginArgs const& args) {
 			//samples - these may extend on more than one frame.
 			auto pos = 0;
 			while (pos != current_hit->length()) {
-				DataFrameHeader const& dfh2 = *dataframeheader_cast(current_hit->getRawDataStart()+pos);
+				DataFrameHeader const& dfh2 = *dataframeheader_cast(current_hit->getRawDataStart() + pos);
 				pos += sizeof(DataFrameHeader);
 				auto const nsamples = dfh2.NDataSamples;
 				auto psamples = static_cast<uint16_t const*>(static_cast<void const*>(current_hit->getRawDataStart() + pos));
@@ -193,8 +195,6 @@ void TrigJANA(PluginArgs const& args) {
 			 One can judge this from the crate/slot/channel combination, but this is setup-dependent.
 			 For the moment, this is not supported. Hence, for the moment I differentiate between waveboard and fa250 by considering that the fa250 has no samples, only time and charge.
 			 */
-
-
 
 			if (hit.data.size() == 0)
 				hit.type = fadcHit_TYPE::FA250VTPMODE7;

@@ -48,13 +48,15 @@ endif (NOT DEFINED ENV{RECO_HOME})
 set (RECO_SOURCEDIR $ENV{RECO_HOME}/src)
 set (RECO_LIBDIR $ENV{RECO_HOME}/lib)
 
-
 if (NOT DEFINED ENV{ROOTSYS})
         message (FATAL_ERROR "Variable ROOTSYS not set")
 else (NOT DEFINED ENV{ROOTSYS})
         message (STATUS "ROOTSYS set to:  $ENV{ROOTSYS}")
 endif (NOT DEFINED ENV{ROOTSYS})
 set (ROOT_INCLUDE_DIR $ENV{ROOTSYS}/include)
+
+# The following was part of a merge conflict that I don't know how to handle.  2020-02-14 DL
+#set (ROOT_LIBDIR $ENV{ROOTSYS}/lib)
 
 
 list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS}) 
@@ -103,6 +105,7 @@ link_directories(
  ${JANA_LIBDIR}
  ${RECO_LIBDIR}
  ${CCDB_LIBDIR}
+ ${ROOT_LIBDIR}
 )
 
 add_library(TrigJANA MODULE

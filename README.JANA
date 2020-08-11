@@ -1,0 +1,77 @@
+
+README.JANA
+
+2020-08-06  David Lawrence
+
+Here are a few notes on how the trigger is implemented in JANA
+and used by Tridas.
+
+There are two important source trees here:
+
+- jtridas:
+	Tridas plugin that couples to JANA. This implements the JEventSource
+	which is how events are passed into JANA. It also takes the results
+	from the JANA processing (via JEventProcessor)and communicates those
+	back to Tridas in the form of a keep/no keep decision for each
+	identified event.
+
+- streamingReco:
+	Set of JANA plugins that produce TriggerDecision objects that are
+	effectively ORed together in the jtridas code as the final decision
+	for an event.
+
+The main idea is to have the jtridas code be fairly generic and deal only
+with TriggerDecision objects. Creation of the TriggerDecision objects is
+where any details of the triggering algorithm are placed. Furthermore,
+multiple factories can exist instantiating objects of different subclasses
+of TriggerDecision. These can be spread over multiple plugins as well.
+This makes it easy to specify multiple specialty triggers just by choosing
+the plugins and to configure them via standard JANA command line configuration
+options.
+
+Some important files:
+
+ - jtridas/TrigJANA.cpp
+	This is the main "glue" between Tridas and JANA. It creates the 
+	JApplication object and adds the JEventSource, JEventProcessor,
+	etc ... Note that it does this via the initialize_jana() routine
+	defined in this file which is called once from TrigJANA by using
+	a std::once_flag. In the TrigJANA routine, it takes a group of  
+	events already identified by Tridas for the time slice and passes
+	them to the JEventSource_Tridas event source. This is done in
+	the form TridasEvent objects which have copies of all of the 
+	hits. It hands them to the JEventSource_Tridas objects via it's
+	submit_and_wait method. It will wait in this method while other
+	JANA threads process the events. Once they are all processed,
+	the TridasEvent::should_keep flag is used to indicate to the
+	Tridas system whether to keep each event or not. 
+	
+- jtridas/API/JEventSource_Tridas.[cc|h]
+	This is the JANA event source that provides the entry point for
+	events into the JANA system. Groups of events are passed in 
+	via the submit_and_wait method. This instantiates a JEventGroup
+	object that is used to track all events in the group so that 
+	the submit_and_wait call can block until they are all processed.
+	Event, group pairs are pushed onto a member queue so that calls
+	to GetEvent can pull events off of the queue to process one at
+	a time. The mechansim allows multiple Tridas threads to call
+	submit_and_wait simultaneously since access to the member queue
+	is controlled via mutex.
+
+	The GetEvent method pulls a single event (with its JEventGroup
+	object) off of the internal queue. It inserts both the TridasEvent
+	and JEventGroup into the JEvent. It also sets the Run and Event
+	numbers in JEvent based on what is set in TridasEvent. It is 
+	worth noting that all hits are left embedded in the TridasEvent
+	object at this point. The GetObjects method of JEventSource_Tridas
+	is not implemented. It is left for factory objects in the
+	streamingReco source tree to extract the hits from TridasEvent
+	and make JObjects out of them.
+
+
+
+
+
+
+
+

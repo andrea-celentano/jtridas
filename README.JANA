@@ -11,8 +11,8 @@ There are two important source trees here:
 - jtridas:
 	Tridas plugin that couples to JANA. This implements the JEventSource
 	which is how events are passed into JANA. It also takes the results
-	from the JANA processing (via JEventProcessor)and communicates those
-	back to Tridas in the form of a keep/no keep decision for each
+	from the JANA processing (via API/GroupedEventProcessor)and communicates
+	those back to Tridas in the form of a keep/no keep decision for each
 	identified event.
 
 - streamingReco:
@@ -68,10 +68,20 @@ Some important files:
 	streamingReco source tree to extract the hits from TridasEvent
 	and make JObjects out of them.
 
+- run/datacard.HallD.jana.json
+	This looks to be the TriDAS configuration file that includes the
+	TrigJANA plugin. It specifies the JANA config file to use which
+	is described below. It probably also specifies how many threads
+	the TriDAS TCPU process should use, though I'm not an expert.
 
-
-
-
+- run/janaConfigFile.dat
+	This is the JANA config file that specifies which JANA plugins to
+	load and what configuration parameters to set for each. It also 
+	specifies how many threads JANA should use. At the time of this
+	writing it is set o Ncores which means it will create one thread
+	for each physical core and each hyperthread. This should be OK
+	since the TriDAS threads will be stalled while JANA has work to
+	do and vice versa.
 
 
 

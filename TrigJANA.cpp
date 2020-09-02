@@ -124,7 +124,7 @@ void TrigJANA(PluginArgs const& args) {
 	assert(config_file_name.length() > 0 && "CONFIG_FILE must be present"); //TODO: is this the right way?
 	std::call_once(is_jana_initialized, &initialize_jana, config_file_name, app, &evt_src);
 
-	lock.unlock();
+	//lock.unlock();
 
 	/*Get the run number. It is coded in the file name of the file that is symlinked by /tmp/latest*/
 	char *fRunFileName = 0;
@@ -219,10 +219,21 @@ void TrigJANA(PluginArgs const& args) {
 		TriggeredEvent& tev = *(evc.trig_event(i));
 		assert(tev.nseeds_[L1TOTAL_ID] && "Triggered event with no seeds");
 		if (event_batch[i]->should_keep) {
-			tev.plugin_nseeds_[id]++;
+			// tev.plugin_nseeds_[id]++;  // this is now set below
 			tev.plugin_ok_ = true;
 			++plug_events;
 		}
+
+		// All all trigger words. Note that the tev.plugin_nseeds_ member was originally
+		// intended to keep one word of info for each TriDAS trigger plugin. In this
+		// implementation TriDAS only has 1 such plugin TrigJANA. Multiple triggers are
+		// implemented in JANA though so we use this to store both a JANA trigger ID 
+		// (high order 16 bits) and trigger decision (low order 16 bits).
+		for(uint32_t j=0; j<event_batch[i]->triggerWords.size(); j++){
+			if( j >= L1TOTAL_ID ) break; // TODO: Make this an error
+			tev.plugin_nseeds_[j] = event_batch[i]->triggerWords[j];
+		}
+
 		delete event_batch[i];
 	}
 

@@ -7,6 +7,7 @@
 
 //JANA includes
 #include "JANA/JApplication.h"
+#include "JANA/JEventSourceGeneratorT.h"
 #include "API/JEventSource_Tridas.h"
 #include "API/GroupedEventProcessor.h"
 #include "JANA/Services/JParameterManager.h"
@@ -33,13 +34,8 @@
 namespace tridas {
 namespace tcpu {
 
-void JANAthreadFun(JApplication *app) {
+void JANAthreadFun(const std::string& config_file_name, TridasEventSource** evt_src) {
 	std::cout << "TrigJANA JANAthreadFun start" << std::endl;
-	app->Run();
-	std::cout << "TrigJANA JANAthreadFun end" << std::endl;
-}
-
-void initialize_jana(const std::string& config_file_name, JApplication* app, TridasEventSource** evt_src) {
 
 	std::cout << "Greetings from David and Nathan!" << std::endl;fflush(stdout);
 	std::cout << "Initializing JANA" << std::endl;fflush(stdout);
@@ -59,7 +55,7 @@ void initialize_jana(const std::string& config_file_name, JApplication* app, Tri
 	auto params_copy = new JParameterManager(params); // JApplication owns params_copy, does not own eventSources
 
 	std::cout << "Creating JApplication " << std::endl;fflush(stdout);
-	app = new JApplication(params_copy);
+	JApplication *app = new JApplication(params_copy);
 	japp = app;
 
 	std::cout <<" Adding the JCalibrationGeneratorCCDB to the app"<<std::endl;
@@ -73,8 +69,13 @@ void initialize_jana(const std::string& config_file_name, JApplication* app, Tri
 	std::cout<<"DONE"<<std::endl;
 	
 	std::cout << "Adding the event source to the Japplication" << std::endl;
-	*evt_src = new TridasEventSource("blocking_source", app);
+	//app->Add( new JEventSourceGeneratorT<TridasEventSource>() );
+	*evt_src = new TridasEventSource("TridasEventSource", app);
 	app->Add(*evt_src);
+	std::cout << "DONE" << std::endl;
+
+	std::cout << "Adding dummy event source to the Japplication" << std::endl;
+	//app->Add("dummy tridas event source");
 	std::cout << "DONE" << std::endl;
 
 	std::cout << "Adding the factories Generators" << std::endl;
@@ -85,19 +86,28 @@ void initialize_jana(const std::string& config_file_name, JApplication* app, Tri
 	app->Add(new GroupedEventProcessor());
 	std::cout << "DONE" << std::endl;
 
+	app->Run();
+	std::cout << "TrigJANA JANAthreadFun end" << std::endl;
+}
+
+void initialize_jana(const std::string& config_file_name, TridasEventSource** evt_src) {
+
 	//Launch the thread with the JApplication and detach from it.
 	std::cout << "TrigJANA starting the thread" << std::endl;
 
 	//probably not necessary, app->Run(kFALSE) is enough
-	boost::thread janaThread(JANAthreadFun, app);
+	boost::thread janaThread(JANAthreadFun, config_file_name, evt_src);
 	janaThread.detach();
 	std::cout << "DONE and DETACHED" << std::endl;
 
 	//Don't need - > JANA2 submit_and_wait buffers in the JEventSource.
 	//A.C. without this, crashes
-	while (!app->IsInitialized()) {
+	std::cout << "Waiting for JANA to initialize ..." << std::endl;
+	while(!japp) std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	while (!japp->IsInitialized()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
+	std::cout << "JANA initialization complete." << std::endl;
 }
 
 void TrigJANA(PluginArgs const& args) {
@@ -117,12 +127,11 @@ void TrigJANA(PluginArgs const& args) {
 
 	//need to pass the configuration file
 	static std::once_flag is_jana_initialized;
-	static JApplication * app = 0;
 	static TridasEventSource* evt_src = 0;
 
 	std::string const config_file_name = args.params->get < std::string > ("CONFIG_FILE");
 	assert(config_file_name.length() > 0 && "CONFIG_FILE must be present"); //TODO: is this the right way?
-	std::call_once(is_jana_initialized, &initialize_jana, config_file_name, app, &evt_src);
+	std::call_once(is_jana_initialized, &initialize_jana, config_file_name, &evt_src);
 
 	//lock.unlock();
 
@@ -132,8 +141,11 @@ void TrigJANA(PluginArgs const& args) {
 
 	int runN = 1;
 	if (fRunFileName == NULL) {
-		std::cout << "TrigJANA: canonicalize_file_name failed" << std::endl;
-		std::cout << "Using run number 1" << std::endl;
+		// 2020-09-03 DL  - It looks like files are currently being written to 
+		// /data/tridas, but no link called "latest" is being created. Comment
+		// out the following lines for now since they obscure the log.
+		//std::cout << "TrigJANA: canonicalize_file_name failed" << std::endl;
+		//std::cout << "Using run number 1" << std::endl;
 	} else {
 		std::string tmpStr(fRunFileName);
 		runN = atoi(tmpStr.substr(tmpStr.find_last_of("/") + 1).c_str());
@@ -142,6 +154,8 @@ void TrigJANA(PluginArgs const& args) {
 
 	/*We now inject the trig_events to the source*/
 	std::vector<TridasEvent*> event_batch;
+
+_DBG_<<"****** NUMBER OF EVENTS: " << evc.used_trig_events() << endl;
 
 	for (int i = 0; i < evc.used_trig_events(); ++i) {
 		TriggeredEvent& tev = *(evc.trig_event(i));
@@ -212,7 +226,10 @@ void TrigJANA(PluginArgs const& args) {
 	}
 
 	//Here is the call to the function that forces JANA to process all the events - this is a blocking function.
-	evt_src->SubmitAndWait(event_batch);
+	if( !event_batch.empty() ){
+		// Only call submit and wait if there is something for it to do.
+		evt_src->SubmitAndWait(event_batch);
+	}
 
 	// for each event, get the result and flag the TriDAS event
 	for (int i = 0; i < evc.used_trig_events(); ++i) {
@@ -224,14 +241,26 @@ void TrigJANA(PluginArgs const& args) {
 			++plug_events;
 		}
 
-		// All all trigger words. Note that the tev.plugin_nseeds_ member was originally
+		// Add all trigger words. Note that the tev.plugin_nseeds_ member was originally
 		// intended to keep one word of info for each TriDAS trigger plugin. In this
 		// implementation TriDAS only has 1 such plugin TrigJANA. Multiple triggers are
 		// implemented in JANA though so we use this to store both a JANA trigger ID 
 		// (high order 16 bits) and trigger decision (low order 16 bits).
-		for(uint32_t j=0; j<event_batch[i]->triggerWords.size(); j++){
-			if( j >= L1TOTAL_ID ) break; // TODO: Make this an error
-			tev.plugin_nseeds_[j] = event_batch[i]->triggerWords[j];
+		//
+		// Note that the local varible "id" here is set by the value given to the TrigJANA
+		// plugin in the TriDAS datacard. It specifies the index of plugin_nseeds_ that
+		// our trigger is supposed to use. For this setup though, we assume we can use
+		// all indices from 0-id. (The datacard specifies 4 for the TriDAS TrigScaler
+		// plugin and 3 for this TrigJANA plugin). In order to allow multiple JANA
+		// trigger plugins, we use the high order 16 bits to specify the index. Thus:
+		// plugin_nseeds_[0] is the FT cosmics trigger      (see streamingReco/src/plugins/hallBFT_cosmic_trigger/TriggerDecision_hallBFT_cosmics_factory.cc)
+		// plugin_nseeds_[1] is the FTCalCluster trigger(s) (see streamingReco/src/plugins/hallBFT_triggers/TriggerDecision_FTCalCluster_factory.cc)
+		// plugin_nseeds_[2] is the MinBias trigger         (see streamingReco/src/plugins/hallBFT_triggers/TriggerDecision_MinBias_factory.cc)
+		// plugin_nseeds_[3] is not in use
+		for( auto trigger_word : event_batch[i]->triggerWords ){
+			auto trig_id = (trigger_word>>16) & 0xFFFF;
+			if( trig_id > id ) break; // TODO: Make this an error
+			tev.plugin_nseeds_[trig_id] = trigger_word;
 		}
 
 		delete event_batch[i];

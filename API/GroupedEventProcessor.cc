@@ -16,7 +16,7 @@ void GroupedEventProcessor::Process(const std::shared_ptr<const JEvent>& event) 
 	// decisions via the TridasEvent object. The should_keep member
 	// is set to true if any decision object indicates it is positive.
 	// We also communicate all individual trigger decisions via the 
-	// pluin_nseeds_[] public array member (see e-mail from Carmello
+	// plugin_nseeds_[] public array member (see e-mail from Carmello
 	// on 8/27/2020). n.b. This will write to the triggerWords member of
 	// the TridasEvent object. Class defined in:
 	// streamingReco/src/libraries/DAQ/TridasEvent.h
@@ -26,10 +26,10 @@ void GroupedEventProcessor::Process(const std::shared_ptr<const JEvent>& event) 
 	// The actual copy is done in jtridas/TrigJANA.cpp.
 
 	for (auto trigger : triggers){
-		auto trigger_word = (trigger->GetID())<<16;
-		if (trigger->GetDecision() == true){
+		auto trigger_decision = trigger->GetDecision();  // Trigger decision is 16bits which may carry additional details. 0 always means no trigger
+		auto trigger_word = trigger_decision + ((trigger->GetID())<<16); // Place trigger id in high 16bits
+		if( trigger_decision != 0x0 ){
 			tridas_event->should_keep = true;
-			trigger_word |= 0x01;
 		}
 		tridas_event->triggerWords.push_back( trigger_word ); // communicate trigger ID and decision to TriDAS
 	}

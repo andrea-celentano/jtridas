@@ -65,6 +65,9 @@ find_package(ROOT REQUIRED COMPONENTS Proof)
 set(CXX_STANDARD_REQUIRED "On")
 set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 
+# Turn on sanitizer to help with memory leaks (WARNING: makes program run less efficiently!)
+#add_compile_options(-fsanitize=address)
+#add_link_options(-fsanitize=address)
 
 
 find_package(Boost 1.66 EXACT REQUIRED COMPONENTS thread system random program_options regex filesystem)

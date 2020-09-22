@@ -26,6 +26,8 @@ public:
 
     TridasEventSource(std::string res_name, JApplication* app);
 
+    static std::string GetDescription(void){ return "TriDAS -> JANA Event Source"; }
+
 
     /// SubmitAndWait provides a blocking interface for pushing groups of TridasEvents into JANA.
     /// JANA does NOT assume ownership of the events vector, nor does it clear it.

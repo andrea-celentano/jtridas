@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.5)
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     message(STATUS "Using GNU c++ compiler")
-    set(CMAKE_CXX_FLAGS "-pthread -pipe -Wall -Wextra -Wno-unused-local-typedefs -Wno-unused-parameter -std=c++11")
+    set(CMAKE_CXX_FLAGS "-pthread -pipe -Wall -Wextra -Wno-unused-local-typedefs -Wno-unused-parameter -std=c++17")
     set(CMAKE_CXX_FLAGS_RELEASE "-O2")
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
 elseif (CMAKE_CXX_COMPILER_ID MATCHES Clang)
@@ -69,8 +69,9 @@ set_property(GLOBAL PROPERTY CXX_STANDARD 11)
 #add_compile_options(-fsanitize=address)
 #add_link_options(-fsanitize=address)
 
-
-find_package(Boost 1.66 EXACT REQUIRED COMPONENTS thread system random program_options regex filesystem)
+set(Boost_NO_WARN_NEW_VERSIONS 1)
+find_package(Boost EXACT REQUIRED COMPONENTS thread system random program_options regex filesystem)
+# find_package(Boost 1.66 EXACT REQUIRED COMPONENTS thread system random program_options regex filesystem)
 #find_package(ZMQ 4.0.4 REQUIRED)
 
 
@@ -117,11 +118,23 @@ add_library(TrigJANA MODULE
     TrigJANA.cpp
     )
 
+target_include_directories(TrigJANA PRIVATE 
+  ${PACKAGES_INCLUDE_DIRS}
+)
+
+target_link_directories(TrigJANA PRIVATE
+  /usr/lib64/mysql
+)
+
 target_link_libraries(
   TrigJANA
   ${Boost_LIBRARIES}
   JANA
   streamingReco
-  ccdb
+  CCDB_lib CCDB_sqlite mysqlclient
 )
 
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()

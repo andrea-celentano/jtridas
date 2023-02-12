@@ -16,12 +16,14 @@ else (CMAKE_COMPILER_IS_GNUCXX)
     message(FATAL_ERROR "${CMAKE_CXX_COMPILER} is not a supported compiler")
 endif (CMAKE_COMPILER_IS_GNUCXX)
 
+# TRIDAS_HOME should be set to the install location, but this does not include
+# the headers. Assume the tridas-core source directory is one up from the install.
 if (NOT DEFINED ENV{TRIDAS_HOME})
 	message (FATAL_ERROR "Variable TRIDAS_HOME not set")
 else (NOT DEFINED ENV{TRIDAS_HOME})
 	message (STATUS "TRIDAS_HOME set to:  $ENV{TRIDAS_HOME}")
 endif (NOT DEFINED ENV{TRIDAS_HOME})
-set (TRIDAS_SOURCEDIR $ENV{TRIDAS_HOME})
+set (TRIDAS_SOURCEDIR $ENV{TRIDAS_HOME}/..)
 
 if (NOT DEFINED ENV{JANA_HOME})
 	message (FATAL_ERROR "Variable JANA_HOME not set")

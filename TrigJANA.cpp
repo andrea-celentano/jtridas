@@ -78,9 +78,9 @@ void JANAthreadFun(const std::string& config_file_name, TridasEventSource** evt_
 	//app->Add("dummy tridas event source");
 	std::cout << "DONE" << std::endl;
 
-	std::cout << "Adding the factories Generators" << std::endl;
-	addRecoFactoriesGenerators(app);
-	std::cout << " Done " << std::endl;
+	// std::cout << "Adding the factories Generators" << std::endl;
+	// addRecoFactoriesGenerators(app);
+	// std::cout << " Done " << std::endl;
 
 	std::cout << "Adding the event processor the Japplication" << std::endl;
 	app->Add(new GroupedEventProcessor());
@@ -185,18 +185,25 @@ _DBG_<<"****** NUMBER OF EVENTS: " << evc.used_trig_events() << endl;
 			//charge
 			hit.charge = current_hit->getCaliCharge();
 
+			// Feb. 28, 2023 DL  - The following was left over from when the
+			// bdx format was used and waveboards could be read out with sample
+			// data. Now (2023) we are using the clas12 data format which reads
+			// only fa250 hits and not in sample form. Thus, the following needs
+			// to be commented out since the clas12 format does not support samples
+			// at all.
+			//
 			//samples - these may extend on more than one frame.
-			auto pos = 0;
-			while (pos != current_hit->length()) {
-				DataFrameHeader const& dfh2 = *dataframeheader_cast(current_hit->getRawDataStart() + pos);
-				pos += sizeof(DataFrameHeader);
-				auto const nsamples = dfh2.NDataSamples;
-				auto psamples = static_cast<uint16_t const*>(static_cast<void const*>(current_hit->getRawDataStart() + pos));
-				for (auto j = 0; j < nsamples; j++) {
-					hit.data.push_back(psamples[j]);
-				}
-				pos += getDFHPayloadSize(dfh2);
-			}
+			// auto pos = 0;
+			// while (pos != current_hit->length()) {
+			// 	DataFrameHeader const& dfh2 = *dataframeheader_cast(current_hit->getRawDataStart() + pos);
+			// 	pos += sizeof(DataFrameHeader);
+			// 	auto const nsamples = dfh2.NDataSamples;
+			// 	auto psamples = static_cast<uint16_t const*>(static_cast<void const*>(current_hit->getRawDataStart() + pos));
+			// 	for (auto j = 0; j < nsamples; j++) {
+			// 		hit.data.push_back(psamples[j]);
+			// 	}
+			// 	pos += getDFHPayloadSize(dfh2);
+			// }
 
 			/*	At the moment (2020), TriDAS can be feed by three hardware sources:
 

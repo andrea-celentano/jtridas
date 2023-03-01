@@ -47,15 +47,16 @@ if (NOT DEFINED ENV{RECO_HOME})
 else (NOT DEFINED ENV{RECO_HOME})
 	message (STATUS "RECO_HOME set to:  $ENV{RECO_HOME}")
 endif (NOT DEFINED ENV{RECO_HOME})
-set (RECO_SOURCEDIR $ENV{RECO_HOME}/src)
+set (RECO_SOURCEDIR $ENV{RECO_HOME}/../src)
 set (RECO_LIBDIR $ENV{RECO_HOME}/lib)
 
-if (NOT DEFINED ENV{ROOTSYS})
-        message (FATAL_ERROR "Variable ROOTSYS not set")
-else (NOT DEFINED ENV{ROOTSYS})
-        message (STATUS "ROOTSYS set to:  $ENV{ROOTSYS}")
-endif (NOT DEFINED ENV{ROOTSYS})
-set (ROOT_INCLUDE_DIR $ENV{ROOTSYS}/include)
+find_package(ROOT REQUIRED)
+# if (NOT DEFINED ENV{ROOTSYS})
+#         message (FATAL_ERROR "Variable ROOTSYS not set")
+# else (NOT DEFINED ENV{ROOTSYS})
+#         message (STATUS "ROOTSYS set to:  $ENV{ROOTSYS}")
+# endif (NOT DEFINED ENV{ROOTSYS})
+# set (ROOT_INCLUDE_DIR $ENV{ROOTSYS}/include)
 
 # The following was part of a merge conflict that I don't know how to handle.  2020-02-14 DL
 #set (ROOT_LIBDIR $ENV{ROOTSYS}/lib)
@@ -98,7 +99,7 @@ set(
   ${RECO_SOURCEDIR}/libraries
   ${Boost_INCLUDE_DIR}
   ${CCDB_INCLUDE_DIR}
-  ${ROOT_INCLUDE_DIR}
+  ${ROOT_INCLUDE_DIRS}
   CACHE INTERNAL ""
 )
    
@@ -111,7 +112,7 @@ link_directories(
  ${JANA_LIBDIR}
  ${RECO_LIBDIR}
  ${CCDB_LIBDIR}
- ${ROOT_LIBDIR}
+#  ${ROOT_LIBDIR}
 )
 
 add_library(TrigJANA MODULE
@@ -132,7 +133,8 @@ target_link_libraries(
   TrigJANA
   ${Boost_LIBRARIES}
   JANA
-  streamingReco
+  #streamingReco
+  ${ROOT_LIBRARIES}
   CCDB_lib CCDB_sqlite mysqlclient
 )
 

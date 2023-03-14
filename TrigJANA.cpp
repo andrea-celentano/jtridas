@@ -254,12 +254,19 @@ _DBG_<<"****** NUMBER OF EVENTS: " << evc.used_trig_events() << endl;
 		// implemented in JANA though so we use this to store both a JANA trigger ID 
 		// (high order 16 bits) and trigger decision (low order 16 bits).
 		//
-		// Note that the local varible "id" here is set by the value given to the TrigJANA
+		// Note that the local variable "id" here is set by the value given to the TrigJANA
 		// plugin in the TriDAS datacard. It specifies the index of plugin_nseeds_ that
 		// our trigger is supposed to use. For this setup though, we assume we can use
 		// all indices from 0-id. (The datacard specifies 4 for the TriDAS TrigScaler
 		// plugin and 3 for this TrigJANA plugin). In order to allow multiple JANA
 		// trigger plugins, we use the high order 16 bits to specify the index. Thus:
+		//
+		// plugin_nseeds_[0] is not in use
+		// plugin_nseeds_[1] is the EIC_5x5 cosmics trigger (see streamingReco/src/plugins/EIC_5x5_cosmic_trigger/TriggerDecision_EIC_5x5_cosmic_factory.cc)
+		// plugin_nseeds_[2] is the EIC_5x5 beam trigger    (see streamingReco/src/plugins/EIC_5x5_beam_trigger/TriggerDecision_EIC_5x5_beam_factory.cc)
+		// plugin_nseeds_[3] is the EIC_5x5_cluster_trigger (see streamingReco/src/plugins/EIC_5x5_cluster_trigger/TriggerDecision_EIC_5x5_cluster_factory.cc)
+		//
+		// Note, the old assignments from previous beam tests in Hall-B are:
 		// plugin_nseeds_[0] is the FT cosmics trigger      (see streamingReco/src/plugins/hallBFT_cosmic_trigger/TriggerDecision_hallBFT_cosmics_factory.cc)
 		// plugin_nseeds_[1] is the FTCalCluster trigger(s) (see streamingReco/src/plugins/hallBFT_triggers/TriggerDecision_FTCalCluster_factory.cc)
 		// plugin_nseeds_[2] is the MinBias trigger         (see streamingReco/src/plugins/hallBFT_triggers/TriggerDecision_MinBias_factory.cc)
